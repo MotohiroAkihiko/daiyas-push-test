@@ -68,7 +68,364 @@
         });
     }
   </script>
+  <script>
+	var GLOBAL_INTERVAL_ARRAY = [];
+    /*
+    * DB制御用クラス
+    */
+    var DB = function DB () {
+	    // プロパティ
+	    this.dbObj = window.openDatabase("Database", "1.0", "daiyas", 200000);
+    };
 
+    /**
+    * DBオブジェクトの取得
+    *  return dbObj
+    */
+    DB.prototype.getDbObj = function getDbObj() {
+	    return this.dbObj;
+    };
+
+    /**
+    * テーブルを生成します。(create用)
+    */
+    DB.prototype.onCreate = function onCreate(db_Object, callback_function){
+	    // クエリ実行
+	    db_Object.transaction(
+		    function(tx) {
+				tx.executeSql('CREATE TABLE IF NOT EXISTS M_KAKUSHU ( various_code INTEGER,  row_no INTEGER, various_names TEXT, various_abbreviations TEXT, sub_various_code_1 INTEGER, sub_various_code_2 INTEGER)');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS M_SHOHIN ( product_code INTEGER,  product_name TEXT, product_abbreviation TEXT, product_type TEXT, lunch_category_type TEXT, price TEXT, main_food_code TEXT, sub_food_code TEXT, display_flag TEXT)');				
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_INFO ( department_code INTEGER, course_code INTEGER, take_out_at TEXT, product_code INTEGER, quantity INTEGER, take_out_confirm INTEGER, update_at TEXT)');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURE_PLAN ( department_code INTEGER, course_code INTEGER, seq INTEGER, customer_code INTEGER, customer_abbreviation TEXT, main_product_1_product_code INTEGER, main_product_1_expected_num INTEGER, main_product_1_expected_input INTEGER, main_product_2_product_code INTEGER, main_product_2_expected_num INTEGER, main_product_2_expected_input INTEGER, main_product_3_product_code INTEGER, main_product_3_expected_num INTEGER, main_product_3_expected_input INTEGER, main_product_4_product_code INTEGER, main_product_4_expected_num INTEGER, main_product_4_expected_input INTEGER, distributor_flag TEXT, main_product_5_product_code INTEGER, main_product_5_expected_num INTEGER, main_product_5_expected_input INTEGER, main_product_6_product_code INTEGER, main_product_6_expected_num INTEGER, main_product_6_expected_input INTEGER, rowstate TEXT )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURE_PLAN_DIVIDED ( department_code INTEGER, course_code INTEGER, row_no INTEGER, customer_code INTEGER, date TEXT, expected_input INTEGER, expected_num INTEGER, order_input INTEGER, order_num TEXT, product_code TEXT, production_pattern INTEGER, update_flag TEXT, updated_at TEXT, rowstate TEXT )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE ( department_code INTEGER, course_code INTEGER, seq INTEGER, customer_code INTEGER, customer_abbreviation TEXT, main_product_1_product_code INTEGER, main_product_1_expected_num INTEGER, main_product_1_order_num INTEGER, main_product_1_achievements_num INTEGER, main_product_1_expected_input INTEGER, main_product_1_order_input INTEGER, main_product_1_achievements_input INTEGER, main_product_1_main_diff_num INTEGER, main_product_1_sub_diff_num INTEGER, main_product_1_main_diff_achievements_num INTEGER, main_product_1_sub_diff_achievements_num INTEGER, main_product_2_product_code INTEGER, main_product_2_expected_num INTEGER, main_product_2_order_num INTEGER, main_product_2_achievements_num INTEGER, main_product_2_expected_input INTEGER, main_product_2_order_input INTEGER, main_product_2_achievements_input INTEGER, main_product_2_main_diff_num INTEGER, main_product_2_sub_diff_num INTEGER, main_product_2_main_diff_achievements_num INTEGER, main_product_2_sub_diff_achievements_num INTEGER, main_product_3_product_code INTEGER, main_product_3_expected_num INTEGER, main_product_3_order_num INTEGER, main_product_3_achievements_num INTEGER, main_product_3_expected_input INTEGER, main_product_3_order_input INTEGER, main_product_3_achievements_input INTEGER, main_product_3_main_diff_num INTEGER, main_product_3_sub_diff_num INTEGER, main_product_3_main_diff_achievements_num INTEGER, main_product_3_sub_diff_achievements_num INTEGER, main_product_4_product_code INTEGER, main_product_4_expected_num INTEGER, main_product_4_order_num INTEGER, main_product_4_achievements_num INTEGER, main_product_4_expected_input INTEGER, main_product_4_order_input INTEGER, main_product_4_achievements_input INTEGER, main_product_4_main_diff_num INTEGER, main_product_4_sub_diff_num INTEGER, main_product_4_main_diff_achievements_num INTEGER, main_product_4_sub_diff_achievements_num INTEGER,  main_product_5_product_code INTEGER, main_product_5_expected_num INTEGER, main_product_5_order_num INTEGER, main_product_5_achievements_num INTEGER, main_product_5_expected_input INTEGER, main_product_5_order_input INTEGER, main_product_5_achievements_input INTEGER, main_product_5_main_diff_num INTEGER, main_product_5_sub_diff_num INTEGER, main_product_5_main_diff_achievements_num INTEGER, main_product_5_sub_diff_achievements_num INTEGER, main_product_6_product_code INTEGER, main_product_6_expected_num INTEGER, main_product_6_order_num INTEGER, main_product_6_achievements_num INTEGER, main_product_6_expected_input INTEGER, main_product_6_order_input INTEGER, main_product_6_achievements_input INTEGER, main_product_6_main_diff_num INTEGER, main_product_6_sub_diff_num INTEGER, main_product_6_main_diff_achievements_num INTEGER, main_product_6_sub_diff_achievements_num INTEGER, message TEXT, distributor_flag TEXT, total_amount INTEGER, total_sales INTEGER, order_flag TEXT, day_before_achievements_flag TEXT, cash_type INTEGER, miso_soup_type TEXT,  furikake_type TEXT, tel_1 TEXT, ExpectedOrder Text, product_type_name TEXT, product_cnt NTEGER, rowstate TEXT )');				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE_CHUMON ( takuisaki_cd INTEGER, shohin_cd INTEGER, hyoji_kbn INTEGER, chumonsu INTEGER )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE_DIVIDED ( department_code INTEGER, course_code INTEGER, customer_code INTEGER, date TEXT, distributor_customer_code TEXT, row_no INTEGER, product_code INTEGER, price INTEGER, expected_num TEXT, order_num TEXT, achievements_num INTEGER, money TEXT, discount TEXT, cash_type TEXT, order_input TEXT, expected_input INTEGER, achievements_input INTEGER, message TEXT, main_food_code INTEGER, sub_food_code INTEGER, updated_at INTEGER, rowstate TEXT )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_MOVE ( department_code INTEGER, course_code INTEGER, opponent_course_code INTEGER, course_name TEXT,opponent_course_name TEXT, seq INTEGER, product_code INTEGER, quantity INTEGER, opponent_confirm_flag INTEGER, confirm_flag INTEGER, updated_at TEXT)');				
+			}, this.errorCB, callback_function);
+	};
+	
+	/**
+	*　テーブルを削除します。(Drop用)
+	*/
+	DB.prototype.onAllDelete = function onAllDelete(db_Object, callback_function) {
+		// クエリ実行
+	    db_Object.transaction(
+		    function(tx) {
+				tx.executeSql('DROP TABLE M_KAKUSHU');
+				tx.executeSql('DROP TABLE M_SHOHIN');
+				tx.executeSql('DROP TABLE T_COURSE_INFO');
+				tx.executeSql('DROP TABLE T_COURE_PLAN');
+				tx.executeSql('DROP TABLE T_COURE_PLAN_DIVIDED');
+				tx.executeSql('DROP TABLE T_COURSE_SALE');
+				tx.executeSql('DROP TABLE T_COURSE_SALE_DIVIDED');
+				tx.executeSql('DROP TABLE T_MOVE');
+			}, this.errorCB, callback_function);
+	};
+
+    /**
+    * 指定したテーブルを削除します。
+    */
+    DB.prototype.onDelete = function onDelete(db_Object, table){
+	    // テーブル作成
+	    sql = "DELETE FROM " + table;
+	    // クエリ実行
+	    db_Object.transaction(function(transaction) {
+        transaction.executeSql(sql,
+                            [],
+							function(transaction,result) {
+								//成功時
+							},this.errorCB
+		    );
+	    });
+    };
+
+    /**
+    * クエリエラー用コールバック共通関数
+    *
+    */
+    DB.prototype.errorCB = function errorCB(transaction, err) {
+		console.log(transaction);
+	    console.log(err);
+	    //設定されているIntervalの解除を行います。
+	    GLOBAL_INTERVAL_ARRAY['bloodtype'] = "end";
+	    for (var key in GLOBAL_INTERVAL_ARRAY) {
+		    if ( key == "bloodtype" ) break;
+		    clearInterval(GLOBAL_INTERVAL_ARRAY[key]);
+	    }
+    };
+
+    /**
+    * SQL文作成(insert)
+    */
+    DB.prototype.genInsert = function genInsert(table, array) {
+	    var name	= '';
+	    var value	= '';
+	    var len = 0;
+	    for (var i in array) {
+		    len++;
+	    }
+	    var count	= len;
+	    array['bloodtype'] = "end";
+	    for (var key in array) {
+		    if ( key == "bloodtype" ) break;
+		    name += key;
+		    if(array[key] == 'now()') {
+			    value	+= "'" + getNowDateTime() + "'";
+		    } else if(is_int(array[key])) {
+			    if (array[key] === "") { //int型なので、空文字の指定が出来ない為
+				    value	+= null;
+			    } else {
+				    value	+= array[key];
+			    }
+		    } else if(array[key] == '@NULL@') {	//  nullを指定したい時の特殊文字
+			    value	+= null;
+		    } else {
+			    value	+= "'" + array[key] + "'";
+		    }
+		    count--;
+		    if(count > 0) {
+			    name	+= ',';
+			    value	+= ',';
+		    }
+	    }
+
+	    // ","残しを取り除きます。
+	    if (name.slice(-1) == ',') {
+		    name = name.slice(0, -1);
+	    }
+	    if (value.slice(-1) == ',') {
+		    value = value.slice(0, -1);
+	    }
+    	return 'insert into ' + table + '(' + name + ') values (' + value + ')';
+    };
+
+    /**
+    * SQL文作成(update)
+    */
+    DB.prototype.genUpdate = function genUpdate(table, array, where) {
+	    if (!isset(where)) where = '';
+	    var value	= '';
+	    var len = 0;
+	    for (var i in array) {
+		    len++;
+	    }
+	    var count	= len;
+	    array['bloodtype'] = "end";
+	    for (var key in array) {
+		    if ( key == "bloodtype" ) break;
+		    value += key + '=';
+		    if(is_array(array[key])) {
+			    value	+= array[key][0] + '+' + array[key][1];
+		    } else if(array[key] == 'now()') {
+			    value	+= "'" + getNowDateTime() + "'";
+		    } else if(is_int(array[key])) {
+			    if (array[key] === "") { //int型なので、空文字の指定が出来ない為
+				    value	+= null;
+			    } else {
+				    value	+= array[key];
+			    }
+		    } else if(array[key] == '@NULL@') {	//  nullを指定したい時の特殊文字
+			    value	+= null;
+		    } else {
+			    value	+= "'" + array[key] + "'";
+		    }
+		    count--;
+		    if(count > 0) {
+			    value	+= ',';
+		    }
+	    }
+
+	    // ","残しを取り除きます。
+	    if (value.slice(-1) == ',') {
+		    value = value.slice(0, -1);
+	    }
+	
+	    if (where != '') {
+		    where = ' where ' + where;
+	    }
+    
+	    return 'update ' + table + ' set ' + value + where;
+    };
+
+    /**
+    * SQL文作成(select)
+    */
+    DB.prototype.genSelect = function genSelect(table, name, where) {
+	    if (!isset(name)) name = '';
+	    if (!isset(where)) where = '';
+	    if(name == '') {
+		    name = '*';
+	    }
+	    if(where != '') {
+		    where = ' where ' + where;
+	    }
+
+	    return 'select ' + name + ' from ' + table + where;
+    };
+
+    /**
+    * SQL文作成(delete)
+    */
+    DB.prototype.genDelete = function genDelete(table, where) {
+	    if (!isset(where)) where = '';
+	    if(where != '') {
+		    where = ' where ' + where;
+	    }
+
+	    return 'delete from ' + table + where;
+    };
+
+    /**
+    * DB結果を配列に格納する.
+    */
+    DB.prototype.getResultRow = function getResultRow(result, row, flg) {
+	    if (!isset(flg)) flg = true;
+	    if (!isset(row)) row = 0;
+	    var len = 0;
+	    var array = {};
+	    for (var i in result) {
+		    len++;
+	    }
+	    var result_count	= len -1;
+	    var count = 0;
+
+	    if (row > result_count) return false;
+
+	    var result_tmp = result.rows.item(row);
+	    result_tmp['bloodtype'] = 'end';
+
+	    if(flg) {
+		    // 連想配列で生成します。(row['test']="")
+		    for (var key in result_tmp) {
+			    if ( key == "bloodtype" ) break;
+			    array[key] = result_tmp[key];
+		    }
+		    return array;
+	    } else {
+		    // 行番号で配列を生成します。(row[0]="")
+		    for (var key in result_tmp) {
+			    if ( key == "bloodtype" ) break;
+			    array[count] = result_tmp[key];
+			    count++;
+		    }
+		    return array;
+	    }
+    };
+
+    /**
+    *
+    */
+    DB.prototype.getResultAll = function getResultAll(result) {
+	    var tmp_list = {};
+	    var list = [];
+	    for (var i = 0; i < result.rows.length; i++) {
+		    var row = result.rows.item(i);
+		    row['bloodtype'] = 'end'; //エンドパラメートを入れる。
+		    for (var key in row) {
+			    if ( key == "bloodtype" ) break;
+			    tmp_list[key] = row[key];
+		    }
+		    list[i] = tmp_list;
+		    tmp_list = {}; //一旦解放してあげます。
+	    }
+	    return list;
+    };
+
+    /**
+    * SQL文作成(insert or replace)
+     */
+    DB.prototype.genUpsert = function genUpsert(table, array) {
+		var name = '';
+		var params = '';
+		var len = 0;
+		for (var i in array) {
+			len++;
+		}
+		var count = len;
+		array['bloodtype'] = "end";
+		for(var n = 0; n < array.length; n++){
+			var value = '';
+			if ( key == "bloodtype" ) break;
+			for(var key in array[n]){
+				if(n == 0){
+					name += key + ',';
+				}
+				if(array[n][key] == 'now()') {
+					value	+= "'" + getNowDateTime() + "'";
+				} else if(is_int(array[n][key])) {
+					if (array[n][key] === "") { //int型なので、空文字の指定が出来ない為
+						value	+= null;
+					} else {
+						value	+= array[n][key];
+					}
+				} else if(array[n][key] == '@NULL@') {	//  nullを指定したい時の特殊文字
+					value	+= null;
+				} else {
+					value	+= "'" + array[n][key] + "'";
+				}
+
+				value	+= ',';
+			}
+
+			// ","残しを取り除きます。
+			if (value.slice(-1) == ',') {
+				value = value.slice(0, -1);
+			}
+
+			params += '(' + value + '),';    
+		}
+
+		// ","残しを取り除きます。
+		if (name.slice(-1) == ',') {
+			name = name.slice(0, -1);
+		}
+		if (params.slice(-1) == ',') {
+			params = params.slice(0, -1);
+		}
+	
+	    return 'insert or replace into ' + table + '(' + name + ') values ' + params + '';
+	};
+
+	function is_array(value) {
+		return value &&                             
+		typeof value === 'object' &&
+		typeof value.length === 'number' &&
+		typeof value.splice === 'function' &&
+		!(value.propertyIsEnumerable('length'));
+	}
+	
+	function is_int(num) {
+		var number = num; //変数を設定する
+		number = String(number); //強制的に文字列型に変換する
+
+		//2文字以上で先頭が'0'の場合は、文字列と判断する
+		if (number.length > 1) {
+			if (number.charAt(0) == '0') {
+				return false;
+			}
+		}
+		if (number.match(/[^0-9]/g)){ //数値以外
+			return false;
+		}
+		return true;
+	}
+
+	function getNowDateTime() {
+		var d = new Date();
+		var year  = d.getFullYear();
+		var month = ('0' + (d.getMonth() + 1)).slice(-2);
+		var day   = ('0' + d.getDate()).slice(-2);
+		var hour  = ('0' + d.getHours()).slice(-2);
+		var min   = ('0' + d.getMinutes()).slice(-2);
+		var sec   = ('0' + d.getSeconds()).slice(-2);
+		var date_time = year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec;
+		return date_time;
+	}
+
+	function isset( data ) {
+    	return ( typeof( data ) != 'undefined' );
+	}
+</script>
 </head>
 <body>
   <div id="app"></div>
