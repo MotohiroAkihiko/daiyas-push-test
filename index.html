@@ -93,7 +93,7 @@
 			registration.onupdatefound = function() {
 				console.log('アップデートがあります！');
 				registration.update();
-				alert('変更があります。アプリを開きなおしてください。');
+				location.reload();
 			}
         }).catch(function(err) {
             // サービスワーカー登録失敗
