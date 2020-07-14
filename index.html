@@ -14,26 +14,88 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="static/icons/top_menu_logo.png">
   <link rel="icon" href="static/icons/top_menu_logo.png">
-  <link rel="manifest" href="/manifest.json">
-  <script src="https://www.gstatic.com/firebasejs/7.4.0/firebase.js"></script>
+  <link rel="manifest" href="./manifest.json">
+  
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-analytics.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-messaging.js"></script>
+
+<script>
+	// Your web app's Firebase configuration
+	var firebaseConfig = {
+		apiKey: "AIzaSyBGaxzH-6Z0SFhN4B6sPga_zKxfKybhrtI",
+		authDomain: "daiyas-mobile.firebaseapp.com",
+		databaseURL: "https://daiyas-mobile.firebaseio.com",
+		projectId: "daiyas-mobile",
+		storageBucket: "daiyas-mobile.appspot.com",
+		messagingSenderId: "530135126351",
+		appId: "1:530135126351:web:54f27592302c7359bfb53a",
+		measurementId: "G-8JFYNJLQ0R"
+	};
+	// Initialize Firebase
+	firebase.initializeApp(firebaseConfig);
+	firebase.analytics();
+</script>
+  
+  
   <script>
-    // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDjbILwGLrqFUEJkExXVyUemxu_oJ4wZbg",
-      authDomain: "natyuraru-push.firebaseapp.com",
-      databaseURL: "https://natyuraru-push.firebaseio.com",
-      projectId: "natyuraru-push",
-      storageBucket: "natyuraru-push.appspot.com",
-      messagingSenderId: "89168151507",
-      appId: "1:89168151507:web:db0836569afc7566086526",
-      measurementId: "G-JWVKG6QF1L"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-  <script>
-    const messaging = firebase.messaging();
+	const messaging = firebase.messaging();
+	
+	var sendToken = token => {
+		new Promise((resolve, reject) => {
+			var timer = setInterval(function () {
+				if (!!window.rootVue) {
+					clearInterval(timer);
+					return resolve(window.rootVue);
+				}
+			}, 100);
+		})
+			.then(vue => {
+				console.log("emit send token", token);
+				vue.$emit("sendToken", token);
+			});
+	};
     
     if ('serviceWorker' in navigator) {
+        // サービスワーカーメッセージlistener
+		navigator.serviceWorker.addEventListener('message', function (event) {
+			var json = event.data;
+			console.log("got SW Msg", json);
+			if (!!json && !!json.data) {
+				var data = json.data;
+				
+				var changeArray = v => {
+					var a = !!v ? JSON.parse(v) : [];
+					a = Array.isArray(a) ? a : [a + ""];
+					return a;
+				};
+				
+				data.target_department = changeArray(data.department_code);
+				data.target_course = changeArray(data.course_code);
+				
+				data.values = !!data.values ? JSON.parse(data.values) : {};
+				data.updateMaster = data.values.updateMaster;
+				data.updateData = data.values.updateData;
+				
+				data.isTarget = (department_code, course_code) => {
+					if (!!data.updateMaster) return true;
+					
+					var isDepartment = !data.target_department.length || data.target_department.includes(department_code);
+					var isCourse = !data.target_course.length || data.target_course.includes(course_code);
+					
+					return isDepartment && isCourse;
+				};
+				
+				//マスタ更新がある為、index.vue優先
+				window.rootVue.$emit("fcmReceivedIndex", data);
+			}
+		});
+		
         // サービスワーカー登録
         navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
             // 成功した場合の処理
@@ -48,9 +110,8 @@
                          messaging.getToken()
                                   .then(function(currentToken) {
                                       if (currentToken) {
-                                          // 通知許可を押下した場合、トークンをコンソール出力
-                                          //ここは後でDBへ格納する処理などに変更しておきましょう
-                                          console.log(currentToken);
+										  console.log('トークンを取得しました。', currentToken);
+										  window.sendToken(currentToken);
                                       } else {
                                           console.log('トークンを取得できませんでした。権限を確認してください。');
                                       }
@@ -61,11 +122,25 @@
                      })
                      .catch(function(err) {
                          console.log('通知が許可されていません。', err);
-                     });
+					 });
+			//更新
+			registration.onupdatefound = function() {
+				console.log('アップデートがあります！');
+				registration.update();
+			}
         }).catch(function(err) {
             // サービスワーカー登録失敗
             console.log('サービスワーカーの登録に失敗しました。', err);
-        });
+		});
+		
+		messaging.onTokenRefresh(() => {
+			messaging.getToken().then((refreshedToken) => {
+				console.log('トークンを更新しました。', refreshedToken);
+				window.sendToken(refreshedToken);
+			}).catch((err) => {
+				console.log('トークンの更新に失敗しました。', err);
+			});
+		});		
     }
   </script>
   <script>
@@ -95,12 +170,16 @@
 		    function(tx) {
 				tx.executeSql('CREATE TABLE IF NOT EXISTS M_KAKUSHU ( various_code INTEGER,  row_no INTEGER, various_names TEXT, various_abbreviations TEXT, sub_various_code_1 INTEGER, sub_various_code_2 INTEGER)');
 				tx.executeSql('CREATE TABLE IF NOT EXISTS M_SHOHIN ( product_code INTEGER,  product_name TEXT, product_abbreviation TEXT, product_type TEXT, lunch_category_type TEXT, price TEXT, main_food_code TEXT, sub_food_code TEXT, display_flag TEXT)');				
+				tx.executeSql('CREATE TABLE IF NOT EXISTS M_SHOHIN_MAIN ( department_code INTEGER, product_code INTEGER,  product_name TEXT, product_abbreviation TEXT, product_type TEXT, lunch_category_type TEXT, price TEXT, main_food_code TEXT, sub_food_code TEXT, display_flag TEXT)');				
 				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_INFO ( department_code INTEGER, course_code INTEGER, take_out_at TEXT, product_code INTEGER, quantity INTEGER, take_out_confirm INTEGER, update_at TEXT)');
 				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURE_PLAN ( department_code INTEGER, course_code INTEGER, seq INTEGER, customer_code INTEGER, customer_abbreviation TEXT, main_product_1_product_code INTEGER, main_product_1_expected_num INTEGER, main_product_1_expected_input INTEGER, main_product_2_product_code INTEGER, main_product_2_expected_num INTEGER, main_product_2_expected_input INTEGER, main_product_3_product_code INTEGER, main_product_3_expected_num INTEGER, main_product_3_expected_input INTEGER, main_product_4_product_code INTEGER, main_product_4_expected_num INTEGER, main_product_4_expected_input INTEGER, distributor_flag TEXT, main_product_5_product_code INTEGER, main_product_5_expected_num INTEGER, main_product_5_expected_input INTEGER, main_product_6_product_code INTEGER, main_product_6_expected_num INTEGER, main_product_6_expected_input INTEGER, rowstate TEXT )');
 				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURE_PLAN_DIVIDED ( department_code INTEGER, course_code INTEGER, row_no INTEGER, customer_code INTEGER, date TEXT, expected_input INTEGER, expected_num INTEGER, order_input INTEGER, order_num TEXT, product_code TEXT, production_pattern INTEGER, update_flag TEXT, updated_at TEXT, rowstate TEXT )');
-				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE ( department_code INTEGER, course_code INTEGER, seq INTEGER, customer_code INTEGER, customer_abbreviation TEXT, main_product_1_product_code INTEGER, main_product_1_expected_num INTEGER, main_product_1_order_num INTEGER, main_product_1_achievements_num INTEGER, main_product_1_expected_input INTEGER, main_product_1_order_input INTEGER, main_product_1_achievements_input INTEGER, main_product_1_main_diff_num INTEGER, main_product_1_sub_diff_num INTEGER, main_product_1_main_diff_achievements_num INTEGER, main_product_1_sub_diff_achievements_num INTEGER, main_product_2_product_code INTEGER, main_product_2_expected_num INTEGER, main_product_2_order_num INTEGER, main_product_2_achievements_num INTEGER, main_product_2_expected_input INTEGER, main_product_2_order_input INTEGER, main_product_2_achievements_input INTEGER, main_product_2_main_diff_num INTEGER, main_product_2_sub_diff_num INTEGER, main_product_2_main_diff_achievements_num INTEGER, main_product_2_sub_diff_achievements_num INTEGER, main_product_3_product_code INTEGER, main_product_3_expected_num INTEGER, main_product_3_order_num INTEGER, main_product_3_achievements_num INTEGER, main_product_3_expected_input INTEGER, main_product_3_order_input INTEGER, main_product_3_achievements_input INTEGER, main_product_3_main_diff_num INTEGER, main_product_3_sub_diff_num INTEGER, main_product_3_main_diff_achievements_num INTEGER, main_product_3_sub_diff_achievements_num INTEGER, main_product_4_product_code INTEGER, main_product_4_expected_num INTEGER, main_product_4_order_num INTEGER, main_product_4_achievements_num INTEGER, main_product_4_expected_input INTEGER, main_product_4_order_input INTEGER, main_product_4_achievements_input INTEGER, main_product_4_main_diff_num INTEGER, main_product_4_sub_diff_num INTEGER, main_product_4_main_diff_achievements_num INTEGER, main_product_4_sub_diff_achievements_num INTEGER,  main_product_5_product_code INTEGER, main_product_5_expected_num INTEGER, main_product_5_order_num INTEGER, main_product_5_achievements_num INTEGER, main_product_5_expected_input INTEGER, main_product_5_order_input INTEGER, main_product_5_achievements_input INTEGER, main_product_5_main_diff_num INTEGER, main_product_5_sub_diff_num INTEGER, main_product_5_main_diff_achievements_num INTEGER, main_product_5_sub_diff_achievements_num INTEGER, main_product_6_product_code INTEGER, main_product_6_expected_num INTEGER, main_product_6_order_num INTEGER, main_product_6_achievements_num INTEGER, main_product_6_expected_input INTEGER, main_product_6_order_input INTEGER, main_product_6_achievements_input INTEGER, main_product_6_main_diff_num INTEGER, main_product_6_sub_diff_num INTEGER, main_product_6_main_diff_achievements_num INTEGER, main_product_6_sub_diff_achievements_num INTEGER, message TEXT, distributor_flag TEXT, total_amount INTEGER, total_sales INTEGER, order_flag TEXT, day_before_achievements_flag TEXT, cash_type INTEGER, miso_soup_type TEXT,  furikake_type TEXT, tel_1 TEXT, ExpectedOrder Text, product_type_name TEXT, product_cnt NTEGER, rowstate TEXT )');				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE_CHUMON ( takuisaki_cd INTEGER, shohin_cd INTEGER, hyoji_kbn INTEGER, chumonsu INTEGER )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE ( department_code INTEGER, course_code INTEGER, seq INTEGER, customer_code INTEGER, customer_abbreviation TEXT, main_product_1_product_code INTEGER, main_product_1_expected_num INTEGER, main_product_1_order_num INTEGER, main_product_1_achievements_num INTEGER, main_product_1_expected_input INTEGER, main_product_1_order_input INTEGER, main_product_1_achievements_input INTEGER, main_product_1_main_diff_num INTEGER, main_product_1_sub_diff_num INTEGER, main_product_1_main_diff_achievements_num INTEGER, main_product_1_sub_diff_achievements_num INTEGER, main_product_2_product_code INTEGER, main_product_2_expected_num INTEGER, main_product_2_order_num INTEGER, main_product_2_achievements_num INTEGER, main_product_2_expected_input INTEGER, main_product_2_order_input INTEGER, main_product_2_achievements_input INTEGER, main_product_2_main_diff_num INTEGER, main_product_2_sub_diff_num INTEGER, main_product_2_main_diff_achievements_num INTEGER, main_product_2_sub_diff_achievements_num INTEGER, main_product_3_product_code INTEGER, main_product_3_expected_num INTEGER, main_product_3_order_num INTEGER, main_product_3_achievements_num INTEGER, main_product_3_expected_input INTEGER, main_product_3_order_input INTEGER, main_product_3_achievements_input INTEGER, main_product_3_main_diff_num INTEGER, main_product_3_sub_diff_num INTEGER, main_product_3_main_diff_achievements_num INTEGER, main_product_3_sub_diff_achievements_num INTEGER, main_product_4_product_code INTEGER, main_product_4_expected_num INTEGER, main_product_4_order_num INTEGER, main_product_4_achievements_num INTEGER, main_product_4_expected_input INTEGER, main_product_4_order_input INTEGER, main_product_4_achievements_input INTEGER, main_product_4_main_diff_num INTEGER, main_product_4_sub_diff_num INTEGER, main_product_4_main_diff_achievements_num INTEGER, main_product_4_sub_diff_achievements_num INTEGER,  main_product_5_product_code INTEGER, main_product_5_expected_num INTEGER, main_product_5_order_num INTEGER, main_product_5_achievements_num INTEGER, main_product_5_expected_input INTEGER, main_product_5_order_input INTEGER, main_product_5_achievements_input INTEGER, main_product_5_main_diff_num INTEGER, main_product_5_sub_diff_num INTEGER, main_product_5_main_diff_achievements_num INTEGER, main_product_5_sub_diff_achievements_num INTEGER, main_product_6_product_code INTEGER, main_product_6_expected_num INTEGER, main_product_6_order_num INTEGER, main_product_6_achievements_num INTEGER, main_product_6_expected_input INTEGER, main_product_6_order_input INTEGER, main_product_6_achievements_input INTEGER, main_product_6_main_diff_num INTEGER, main_product_6_sub_diff_num INTEGER, main_product_6_main_diff_achievements_num INTEGER, main_product_6_sub_diff_achievements_num INTEGER, message TEXT, distributor_flag TEXT, total_amount INTEGER, total_sales INTEGER, order_flag TEXT, day_before_achievements_flag TEXT, cash_type INTEGER, miso_soup_type TEXT,  furikake_type TEXT, tel_1 TEXT, ExpectedOrder Text, product_type_name TEXT, product_cnt NTEGER, rowstate TEXT )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE_CHUMON ( takuisaki_cd INTEGER, shohin_cd INTEGER, hyoji_kbn INTEGER, chumonsu INTEGER )');
 				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_SALE_DIVIDED ( department_code INTEGER, course_code INTEGER, customer_code INTEGER, date TEXT, distributor_customer_code TEXT, row_no INTEGER, product_code INTEGER, price INTEGER, expected_num TEXT, order_num TEXT, achievements_num INTEGER, money TEXT, discount TEXT, cash_type TEXT, order_input TEXT, expected_input INTEGER, achievements_input INTEGER, message TEXT, main_food_code INTEGER, sub_food_code INTEGER, updated_at INTEGER, rowstate TEXT )');
-				tx.executeSql('CREATE TABLE IF NOT EXISTS T_MOVE ( department_code INTEGER, course_code INTEGER, opponent_course_code INTEGER, course_name TEXT,opponent_course_name TEXT, seq INTEGER, product_code INTEGER, quantity INTEGER, opponent_confirm_flag INTEGER, confirm_flag INTEGER, updated_at TEXT)');				
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_DISTRIBUTION ( department_code INTEGER, course_code INTEGER, seq INTEGER, customer_code INTEGER, customer_abbreviation TEXT, main_product_1_product_code INTEGER, main_product_1_expected_num INTEGER, main_product_1_order_num INTEGER, main_product_1_achievements_num INTEGER, main_product_1_expected_input INTEGER, main_product_1_order_input INTEGER, main_product_1_achievements_input INTEGER, main_product_1_main_diff_num INTEGER, main_product_1_sub_diff_num INTEGER, main_product_1_main_diff_achievements_num INTEGER, main_product_1_sub_diff_achievements_num INTEGER, main_product_2_product_code INTEGER, main_product_2_expected_num INTEGER, main_product_2_order_num INTEGER, main_product_2_achievements_num INTEGER, main_product_2_expected_input INTEGER, main_product_2_order_input INTEGER, main_product_2_achievements_input INTEGER, main_product_2_main_diff_num INTEGER, main_product_2_sub_diff_num INTEGER, main_product_2_main_diff_achievements_num INTEGER, main_product_2_sub_diff_achievements_num INTEGER, main_product_3_product_code INTEGER, main_product_3_expected_num INTEGER, main_product_3_order_num INTEGER, main_product_3_achievements_num INTEGER, main_product_3_expected_input INTEGER, main_product_3_order_input INTEGER, main_product_3_achievements_input INTEGER, main_product_3_main_diff_num INTEGER, main_product_3_sub_diff_num INTEGER, main_product_3_main_diff_achievements_num INTEGER, main_product_3_sub_diff_achievements_num INTEGER, main_product_4_product_code INTEGER, main_product_4_expected_num INTEGER, main_product_4_order_num INTEGER, main_product_4_achievements_num INTEGER, main_product_4_expected_input INTEGER, main_product_4_order_input INTEGER, main_product_4_achievements_input INTEGER, main_product_4_main_diff_num INTEGER, main_product_4_sub_diff_num INTEGER, main_product_4_main_diff_achievements_num INTEGER, main_product_4_sub_diff_achievements_num INTEGER,  main_product_5_product_code INTEGER, main_product_5_expected_num INTEGER, main_product_5_order_num INTEGER, main_product_5_achievements_num INTEGER, main_product_5_expected_input INTEGER, main_product_5_order_input INTEGER, main_product_5_achievements_input INTEGER, main_product_5_main_diff_num INTEGER, main_product_5_sub_diff_num INTEGER, main_product_5_main_diff_achievements_num INTEGER, main_product_5_sub_diff_achievements_num INTEGER, main_product_6_product_code INTEGER, main_product_6_expected_num INTEGER, main_product_6_order_num INTEGER, main_product_6_achievements_num INTEGER, main_product_6_expected_input INTEGER, main_product_6_order_input INTEGER, main_product_6_achievements_input INTEGER, main_product_6_main_diff_num INTEGER, main_product_6_sub_diff_num INTEGER, main_product_6_main_diff_achievements_num INTEGER, main_product_6_sub_diff_achievements_num INTEGER, message TEXT, distributor_flag TEXT, total_amount INTEGER, total_sales INTEGER, order_flag TEXT, day_before_achievements_flag TEXT, cash_type INTEGER, miso_soup_type TEXT,  furikake_type TEXT, tel_1 TEXT, ExpectedOrder Text, product_type_name TEXT, product_cnt NTEGER , dummy TEXT, rowstate TEXT )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_COURSE_DISTRIBUTION_DIVIDED ( department_code INTEGER, course_code INTEGER, customer_code INTEGER, date TEXT, distributor_customer_code TEXT, row_no INTEGER, product_code INTEGER, price INTEGER, expected_num TEXT, order_num TEXT, achievements_num INTEGER, money TEXT, discount TEXT, cash_type TEXT, order_input TEXT, expected_input INTEGER, achievements_input INTEGER, message TEXT, main_food_code INTEGER, sub_food_code INTEGER, updated_at INTEGER, rowstate TEXT )');
+				tx.executeSql('CREATE TABLE IF NOT EXISTS T_MOVE ( department_code INTEGER, course_code INTEGER, opponent_course_code INTEGER, course_name TEXT,opponent_course_name TEXT, seq INTEGER, product_code INTEGER, quantity INTEGER, opponent_confirm_flag INTEGER, confirm_flag INTEGER, updated_at TEXT)');							
 			}, this.errorCB, callback_function);
 	};
 	
@@ -113,11 +192,15 @@
 		    function(tx) {
 				tx.executeSql('DROP TABLE M_KAKUSHU');
 				tx.executeSql('DROP TABLE M_SHOHIN');
+				tx.executeSql('DROP TABLE M_SHOHIN_MAIN');
 				tx.executeSql('DROP TABLE T_COURSE_INFO');
 				tx.executeSql('DROP TABLE T_COURE_PLAN');
 				tx.executeSql('DROP TABLE T_COURE_PLAN_DIVIDED');
 				tx.executeSql('DROP TABLE T_COURSE_SALE');
+				tx.executeSql('DROP TABLE T_COURSE_SALE_CHUMON');
 				tx.executeSql('DROP TABLE T_COURSE_SALE_DIVIDED');
+				tx.executeSql('DROP TABLE T_COURSE_DISTRIBUTION');
+				tx.executeSql('DROP TABLE T_COURSE_DISTRIBUTION_DIVIDED');
 				tx.executeSql('DROP TABLE T_MOVE');
 			}, this.errorCB, callback_function);
 	};
