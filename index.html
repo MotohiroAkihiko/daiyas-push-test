@@ -126,6 +126,7 @@
 			registration.addEventListener('updatefound', function() {
 				console.log('アップデート情報があります。');
 				registration.update();
+				location.reload();
 			});
         }).catch(function(err) {
             // サービスワーカー登録失敗
