@@ -93,8 +93,8 @@
 			registration.onupdatefound = function() {
 				console.log('アップデートがあります！');
 				registration.update();
+				window.location.reload(true);
 			}
-			location.reload();
         }).catch(function(err) {
             // サービスワーカー登録失敗
             console.log('サービスワーカーの登録に失敗しました。', err);
