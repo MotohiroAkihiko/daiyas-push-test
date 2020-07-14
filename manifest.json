@@ -4,7 +4,7 @@
   "short_name": "DaiyasMobile",
   "description": "DaiyasMobile",
   "lang": "en-US",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#EE350F",
   "theme_color": "#EE350F",
