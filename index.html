@@ -97,7 +97,7 @@
 				//サービスワーカー更新
 				registration.update();
 				//ダイアログ
-				app.dialog.alert(text, '更新データがあります。アプリを再起動して下さい。', callback);
+				app.dialog.alert('', '更新データがあります。アプリを再起動して下さい。', callback);
 			}
         }).catch(function(err) {
             // サービスワーカー登録失敗
