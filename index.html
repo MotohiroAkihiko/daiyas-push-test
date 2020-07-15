@@ -71,7 +71,7 @@
 			messaging.useServiceWorker(registration);
 			//サービスワーカー更新
 			registration.onupdatefound = function() {
-				console.log('アップデートがあります！');
+				console.log('アップデートがあります。');
 				registration.update();
 				alert('更新内容があります。アプリを再起動してください');
 			}
