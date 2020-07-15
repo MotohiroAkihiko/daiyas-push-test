@@ -89,7 +89,12 @@
                      })
                      .catch(function(err) {
                          console.log('通知が許可されていません。', err);
-                     });
+					 });
+			//サービスワーカー更新
+			registration.onupdatefound = function() {
+				console.log('アップデートがあります。');
+				registration.update();
+			}
         }).catch(function(err) {
             // サービスワーカー登録失敗
             console.log('サービスワーカーの登録に失敗しました。', err);
