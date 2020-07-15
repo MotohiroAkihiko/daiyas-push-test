@@ -12,8 +12,6 @@
 	// Initialize Firebase
 	firebase.initializeApp(firebaseConfig);
 	firebase.analytics();</script><script>const messaging = firebase.messaging();
-	const self = this;
-	const app = self.$f7;
 	
 	var sendToken = token => {
 		new Promise((resolve, reject) => {
@@ -96,8 +94,7 @@
 				console.log('アップデートがあります！');
 				//サービスワーカー更新
 				registration.update();
-				//ダイアログ
-				app.dialog.alert('', '更新データがあります。アプリを再起動して下さい。', callback);
+				alert('更新内容があります。アプリを再起動してください');
 			}
         }).catch(function(err) {
             // サービスワーカー登録失敗
