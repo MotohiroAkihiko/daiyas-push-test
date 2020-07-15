@@ -68,13 +68,7 @@
             // 成功した場合の処理
             console.log('サービスワーカーを登録しました。', registration.scope);
             // 登録処理
-			messaging.useServiceWorker(registration);
-			//サービスワーカー更新
-			registration.onupdatefound = function() {
-				console.log('アップデートがあります。');
-				registration.update();
-				alert('更新内容があります。アプリを再起動してください');
-			}
+            messaging.useServiceWorker(registration);
             // 通知の受信許可確認
             messaging.requestPermission()
                      .then(function() {
@@ -95,7 +89,7 @@
                      })
                      .catch(function(err) {
                          console.log('通知が許可されていません。', err);
-					 });
+                     });
         }).catch(function(err) {
             // サービスワーカー登録失敗
             console.log('サービスワーカーの登録に失敗しました。', err);
