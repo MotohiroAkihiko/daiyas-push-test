@@ -99,7 +99,7 @@
         // サービスワーカー登録
         navigator.serviceWorker.register('./service-worker2.js').then(function(registration) {
             // 成功した場合の処理
-            console.log('サービスワーカーを登録しました。', registration.scope);
+            console.log('サービスワーカーを登録しました。2', registration.scope);
             // 登録処理
             messaging.useServiceWorker(registration);
             // 通知の受信許可確認
