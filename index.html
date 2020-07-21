@@ -97,7 +97,7 @@
 		});
 		
         // サービスワーカー登録
-        navigator.serviceWorker.register('./service-worker.js?20200721122000').then(function(registration) {
+        navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
             // 成功した場合の処理
             console.log('サービスワーカーを登録しました。', registration.scope);
             // 登録処理
@@ -146,6 +146,7 @@
 		//キャッシュ削除
 		navigator.serviceWorker.getRegistration()
 		.then(registration => {
+			console.log("キャッシュサクジョ");
 			console.log(registration);
 			registration.unregister();
 		})
