@@ -123,11 +123,11 @@
                      .catch(function(err) {
                          console.log('通知が許可されていません。', err);
 					 });
-			//サービスワーカー更新
-			registration.onupdatefound = function() {
-				console.log('アップデートがあります。');
-				registration.update();
-			}
+			// //サービスワーカー更新
+			// registration.onupdatefound = function() {
+			// 	console.log('アップデートがあります。');
+			// 	registration.update();
+			// }
         }).catch(function(err) {
             // サービスワーカー登録失敗
             console.log('サービスワーカーの登録に失敗しました。', err);
@@ -142,12 +142,10 @@
 			});
 		});
 		
-		console.log(navigator);
 		//キャッシュ削除
 		navigator.serviceWorker.getRegistration()
 		.then(registration => {
-			console.log("キャッシュサクジョ");
-			console.log(registration);
+			console.log("キャッシュ削除");
 			registration.unregister();
 		})
     }
