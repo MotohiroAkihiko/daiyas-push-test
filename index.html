@@ -44,7 +44,6 @@
   
   
   <script>
-	  console.log('ver.1.0');
 	const messaging = firebase.messaging();
 	
 	var sendToken = token => {
@@ -124,11 +123,11 @@
                      .catch(function(err) {
                          console.log('通知が許可されていません。', err);
 					 });
-			//サービスワーカー更新
-			registration.onupdatefound = function() {
-				console.log('アップデートがあります。');
-				registration.update();
-			}
+			// //サービスワーカー更新
+			// registration.onupdatefound = function() {
+			// 	console.log('アップデートがあります。');
+			// 	registration.update();
+			// }
         }).catch(function(err) {
             // サービスワーカー登録失敗
             console.log('サービスワーカーの登録に失敗しました。', err);
@@ -143,12 +142,12 @@
 			});
 		});
 		
-		// //キャッシュ削除
-		// navigator.serviceWorker.getRegistration()
-		// .then(registration => {
-		// 	console.log("サービスワーカー解除");
-		// 	registration.unregister();
-		// })
+		//キャッシュ削除
+		navigator.serviceWorker.getRegistration()
+		.then(registration => {
+			console.log("サービスワーカー解除");
+			registration.unregister();
+		})
     }
   </script>
   <script>
