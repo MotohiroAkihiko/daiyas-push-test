@@ -95,11 +95,18 @@
 				window.rootVue.$emit("fcmReceivedIndex", data);
 			}
 		});
+
+		//キャッシュ削除
+		navigator.serviceWorker.getRegistration()
+		.then(registration => {
+			console.log("サービスワーカー解除");
+			registration.unregister();
+		})
 		
         // サービスワーカー登録
         navigator.serviceWorker.register('./service-worker1.js').then(function(registration) {
             // 成功した場合の処理
-            console.log('サービスワーカーを登録しました。1', registration.scope);
+            console.log('サービスワーカーを登録しました。2', registration.scope);
             // 登録処理
             messaging.useServiceWorker(registration);
             // 通知の受信許可確認
@@ -141,13 +148,6 @@
 				console.log('トークンの更新に失敗しました。', err);
 			});
 		});
-		
-		//キャッシュ削除
-		navigator.serviceWorker.getRegistration()
-		.then(registration => {
-			console.log("サービスワーカー解除");
-			registration.unregister();
-		})
     }
   </script>
   <script>
